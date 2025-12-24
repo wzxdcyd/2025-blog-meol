@@ -11,6 +11,9 @@ import { useConfigStore } from '@/app/(home)/stores/config-store'
 import initialList from './list.json'
 import type { Share } from './components/share-card'
 import type { LogoItem } from './components/logo-upload-dialog'
+import { saveLocalShares } from './actions/save-local'
+import { fileToBase64NoPrefix, hashFileSHA256 } from '@/lib/file-utils'
+import { getFileExt } from '@/lib/utils'
 
 export default function Page() {
 	const [shares, setShares] = useState<Share[]>(initialList as Share[])
@@ -98,6 +101,53 @@ export default function Page() {
 		}
 	}
 
+	const handleSaveLocal = async () => {
+		setIsSaving(true)
+		try {
+			const localImages: { urlKey: string; name: string; contentBase64: string }[] = []
+
+			for (const [url, logoItem] of logoItems.entries()) {
+				if (logoItem.type === 'file') {
+					const hash = logoItem.hash || (await hashFileSHA256(logoItem.file))
+					const ext = getFileExt(logoItem.file.name)
+					const filename = `${hash}${ext}`
+					const contentBase64 = await fileToBase64NoPrefix(logoItem.file)
+
+					localImages.push({
+						urlKey: url,
+						name: filename,
+						contentBase64
+					})
+				}
+			}
+
+			await saveLocalShares({
+				shares,
+				localImages
+			})
+
+			// Update state to reflect local paths
+			const updatedShares = shares.map(s => {
+				const img = localImages.find(li => li.urlKey === s.url)
+				if (img) {
+					return { ...s, image: `/images/share/${img.name}` }
+				}
+				return s
+			})
+
+			setShares(updatedShares)
+			setOriginalShares(updatedShares)
+			setLogoItems(new Map())
+			setIsEditMode(false)
+			toast.success('保存到本地成功！')
+		} catch (error: any) {
+			console.error(error)
+			toast.error('保存本地失败: ' + error.message)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
 	const handleCancel = () => {
 		setShares(originalShares)
 		setLogoItems(new Map())
@@ -146,6 +196,14 @@ export default function Page() {
 							disabled={isSaving}
 							className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>
 							取消
+						</motion.button>
+						<motion.button
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							onClick={handleSaveLocal}
+							disabled={isSaving}
+							className='rounded-xl border border-blue-200 bg-blue-50 px-6 py-2 text-sm text-blue-700'>
+							保存本地
 						</motion.button>
 						<motion.button
 							whileHover={{ scale: 1.05 }}

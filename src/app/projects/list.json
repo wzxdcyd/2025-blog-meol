@@ -1,12 +1,12 @@
 [
 	{
-		"name": "打印机",
+		"name": "时光",
 		"year": 2025,
-		"image": "blob:https://wzxdcyd.icu/170a41d7-d14a-4f57-bd28-ef5a821a84ee",
+		"image": "/images/project/f611d6bbca605966.png",
 		"url": "https://printer.wzxdcyd.icu",
 		"description": "printer.",
 		"tags": [
-			"留声机"
+			"寻呼机～"
 		]
 	}
 ]

@@ -10,6 +10,9 @@ import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 import initialList from './list.json'
 import type { AvatarItem } from './components/avatar-upload-dialog'
+import { saveLocalBloggers } from './actions/save-local'
+import { fileToBase64NoPrefix, hashFileSHA256 } from '@/lib/file-utils'
+import { getFileExt } from '@/lib/utils'
 
 export default function Page() {
 	const [bloggers, setBloggers] = useState<Blogger[]>(initialList as Blogger[])
@@ -97,6 +100,53 @@ export default function Page() {
 		}
 	}
 
+	const handleSaveLocal = async () => {
+		setIsSaving(true)
+		try {
+			const localImages: { urlKey: string; name: string; contentBase64: string }[] = []
+
+			for (const [url, avatarItem] of avatarItems.entries()) {
+				if (avatarItem.type === 'file') {
+					const hash = avatarItem.hash || (await hashFileSHA256(avatarItem.file))
+					const ext = getFileExt(avatarItem.file.name)
+					const filename = `${hash}${ext}`
+					const contentBase64 = await fileToBase64NoPrefix(avatarItem.file)
+
+					localImages.push({
+						urlKey: url,
+						name: filename,
+						contentBase64
+					})
+				}
+			}
+
+			await saveLocalBloggers({
+				bloggers,
+				localImages
+			})
+
+			// Update state to reflect local paths
+			const updatedBloggers = bloggers.map(b => {
+				const img = localImages.find(li => li.urlKey === b.url)
+				if (img) {
+					return { ...b, avatar: `/images/blogger/${img.name}` }
+				}
+				return b
+			})
+
+			setBloggers(updatedBloggers)
+			setOriginalBloggers(updatedBloggers)
+			setAvatarItems(new Map())
+			setIsEditMode(false)
+			toast.success('保存到本地成功！')
+		} catch (error: any) {
+			console.error(error)
+			toast.error('保存本地失败: ' + error.message)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
 	const handleCancel = () => {
 		setBloggers(originalBloggers)
 		setAvatarItems(new Map())
@@ -145,6 +195,14 @@ export default function Page() {
 							disabled={isSaving}
 							className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>
 							取消
+						</motion.button>
+						<motion.button
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							onClick={handleSaveLocal}
+							disabled={isSaving}
+							className='rounded-xl border border-blue-200 bg-blue-50 px-6 py-2 text-sm text-blue-700'>
+							保存本地
 						</motion.button>
 						<motion.button
 							whileHover={{ scale: 1.05 }}
