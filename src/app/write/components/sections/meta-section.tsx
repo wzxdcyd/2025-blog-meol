@@ -17,7 +17,7 @@ export function MetaSection({ delay = 0 }: MetaSectionProps) {
 	const { siteContent } = useConfigStore()
 	const enableCategories = siteContent.enableCategories ?? false
 
-	const categoryOptions = [{ value: '', label: '未分类' }, ...categories.map(cat => ({ value: cat, label: cat }))]
+	const categoryOptions = categories.map(cat => ({ value: cat, label: cat }))
 
 	return (
 		<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay }} className='card relative'>
