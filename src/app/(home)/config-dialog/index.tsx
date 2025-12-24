@@ -11,7 +11,6 @@ import type { SiteContent, CardStyles } from '../stores/config-store'
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
 import { HomeLayout } from './home-layout'
-import { saveSiteContentLocal } from '../actions/save-site-content-local'
 import { fileToBase64NoPrefix } from '@/lib/file-utils'
 
 interface ConfigDialogProps {
@@ -136,82 +135,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		} catch (error: any) {
 			console.error('Failed to save:', error)
 			toast.error(`保存失败: ${error?.message || '未知错误'}`)
-		} finally {
-			setIsSaving(false)
-		}
-	}
-
-	const handleSaveLocal = async () => {
-		setIsSaving(true)
-		try {
-			const files: { filePath: string; contentBase64: string }[] = []
-
-			// 1. Favicon
-			if (faviconItem?.type === 'file') {
-				const contentBase64 = await fileToBase64NoPrefix(faviconItem.file)
-				files.push({ filePath: 'public/favicon.png', contentBase64 })
-			}
-
-			// 2. Avatar
-			if (avatarItem?.type === 'file') {
-				const contentBase64 = await fileToBase64NoPrefix(avatarItem.file)
-				files.push({ filePath: 'public/images/avatar.png', contentBase64 })
-			}
-
-			// 3. Art Images
-			for (const [id, item] of Object.entries(artImageUploads)) {
-				if (item.type === 'file') {
-					const artConfig = formData.artImages?.find(art => art.id === id)
-					if (artConfig) {
-						const contentBase64 = await fileToBase64NoPrefix(item.file)
-						files.push({ filePath: `public${artConfig.url}`, contentBase64 })
-					}
-				}
-			}
-
-			// 4. Background Images
-			for (const [id, item] of Object.entries(backgroundImageUploads)) {
-				if (item.type === 'file') {
-					const bgConfig = formData.backgroundImages?.find(bg => bg.id === id)
-					if (bgConfig) {
-						const contentBase64 = await fileToBase64NoPrefix(item.file)
-						files.push({ filePath: `public${bgConfig.url}`, contentBase64 })
-					}
-				}
-			}
-
-			// 5. Social Buttons
-			for (const [id, item] of Object.entries(socialButtonImageUploads)) {
-				if (item.type === 'file') {
-					const btnConfig = formData.socialButtons?.find(btn => btn.id === id)
-					if (btnConfig) {
-						const contentBase64 = await fileToBase64NoPrefix(item.file)
-						files.push({ filePath: `public${btnConfig.value}`, contentBase64 })
-					}
-				}
-			}
-
-			await saveSiteContentLocal({
-				siteContent: formData,
-				cardStyles: cardStylesData,
-				files
-			})
-
-			setSiteContent(formData)
-			setCardStyles(cardStylesData)
-			updateThemeVariables(formData.theme)
-
-			setFaviconItem(null)
-			setAvatarItem(null)
-			setArtImageUploads({})
-			setBackgroundImageUploads({})
-			setSocialButtonImageUploads({})
-
-			toast.success('已保存到本地！')
-			onClose()
-		} catch (error: any) {
-			console.error(error)
-			toast.error('保存本地失败: ' + error.message)
 		} finally {
 			setIsSaving(false)
 		}
@@ -349,14 +272,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 							disabled={isSaving}
 							className='bg-card rounded-xl border px-6 py-2 text-sm'>
 							取消
-						</motion.button>
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={handleSaveLocal}
-							disabled={isSaving}
-							className='rounded-xl border border-blue-200 bg-blue-50 px-6 py-2 text-sm text-blue-700'>
-							保存本地
 						</motion.button>
 						<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveClick} disabled={isSaving} className='brand-btn px-6'>
 							{isSaving ? '保存中...' : buttonText}

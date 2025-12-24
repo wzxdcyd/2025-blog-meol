@@ -46,3 +46,8 @@ next-env.d.ts
 
 #vscode
 .history/
+
+# local dev
+.idea/
+**/actions/save-local.ts
+**/actions/save-site-content-local.ts
