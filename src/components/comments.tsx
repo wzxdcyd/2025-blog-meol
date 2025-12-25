@@ -10,15 +10,20 @@ interface CommentsProps {
 	path?: string
 }
 
-export const Comments = ({ className, path }: CommentsProps) => {
+export const Comments = ({ className, path, serverURL: propServerURL }: CommentsProps & { serverURL?: string }) => {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const walineInstanceRef = useRef<any>(null)
 
 	useEffect(() => {
 		if (!containerRef.current) return
 
-		const serverURL = process.env.NEXT_PUBLIC_WALINE_SERVER_URL
-		if (!serverURL) {
+		// Priority: Prop > Environment Variable > Hardcoded fallback (if any)
+		const envURL = process.env.NEXT_PUBLIC_WALINE_SERVER_URL
+		const finalServerURL = propServerURL || envURL
+
+		console.log('[Comments] Init Waline with:', { propServerURL, envURL, finalServerURL })
+
+		if (!finalServerURL) {
 			console.warn('Waline serverURL is not configured. Comments will not be loaded.')
 			return
 		}
@@ -26,7 +31,7 @@ export const Comments = ({ className, path }: CommentsProps) => {
 		try {
 			walineInstanceRef.current = init({
 				el: containerRef.current,
-				serverURL,
+				serverURL: finalServerURL,
 				path: path || (typeof window !== 'undefined' ? window.location.pathname : undefined),
 				dark: 'html[class="dark"]',
 			})
@@ -39,7 +44,7 @@ export const Comments = ({ className, path }: CommentsProps) => {
 				walineInstanceRef.current.destroy()
 			}
 		}
-	}, [path])
+	}, [path, propServerURL])
 
 	return <div className={cn('mt-10 w-full', className)} ref={containerRef} />
 }
