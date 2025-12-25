@@ -17,12 +17,22 @@ export const Comments = ({ className, path }: CommentsProps) => {
 	useEffect(() => {
 		if (!containerRef.current) return
 
-		walineInstanceRef.current = init({
-			el: containerRef.current,
-			serverURL: process.env.NEXT_PUBLIC_WALINE_SERVER_URL || '',
-			path: path || (typeof window !== 'undefined' ? window.location.pathname : undefined),
-			dark: 'html[class="dark"]',
-		})
+		const serverURL = process.env.NEXT_PUBLIC_WALINE_SERVER_URL
+		if (!serverURL) {
+			console.warn('Waline serverURL is not configured. Comments will not be loaded.')
+			return
+		}
+
+		try {
+			walineInstanceRef.current = init({
+				el: containerRef.current,
+				serverURL,
+				path: path || (typeof window !== 'undefined' ? window.location.pathname : undefined),
+				dark: 'html[class="dark"]',
+			})
+		} catch (e) {
+			console.error('Failed to initialize Waline:', e)
+		}
 
 		return () => {
 			if (walineInstanceRef.current) {
