@@ -11,6 +11,7 @@ import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 import type { ImageItem } from '../projects/components/image-upload-dialog'
 import { useRouter } from 'next/navigation'
+import { savePicturesLocally } from './actions'
 
 export interface Picture {
 	id: string
@@ -195,6 +196,35 @@ export default function Page() {
 		}
 	}
 
+	const handleLocalSave = async () => {
+		setIsSaving(true)
+		try {
+			const formData = new FormData()
+			formData.append('pictures', JSON.stringify(pictures))
+			
+			for (const [key, item] of imageItems.entries()) {
+				if (item.type === 'file') {
+					formData.append(key, item.file)
+				}
+			}
+
+			await savePicturesLocally(formData)
+
+			// Refresh state to match what was saved (though reload is safer to get processed paths)
+			// But for now, we just reload the page or update local state?
+			// Since paths are updated in backend, the frontend state 'pictures' still has blob URLs.
+			// We should probably just reload the window to fetch fresh JSON and images.
+			toast.success('本地保存成功，正在刷新...')
+			setTimeout(() => {
+				window.location.reload()
+			}, 1000)
+		} catch (error: any) {
+			console.error('Failed to save locally:', error)
+			toast.error(`本地保存失败: ${error?.message || '未知错误'}`)
+			setIsSaving(false)
+		}
+	}
+
 	const handleCancel = () => {
 		setPictures(originalPictures)
 		setImageItems(new Map())
@@ -242,6 +272,16 @@ export default function Page() {
 			<motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} className='absolute top-4 right-6 flex gap-3 max-sm:hidden'>
 				{isEditMode ? (
 					<>
+						{process.env.NODE_ENV === 'development' && (
+							<motion.button
+								whileHover={{ scale: 1.05 }}
+								whileTap={{ scale: 0.95 }}
+								onClick={handleLocalSave}
+								disabled={isSaving}
+								className='rounded-xl border bg-yellow-50 px-4 py-2 text-sm text-yellow-700 font-medium'>
+								{isSaving ? 'Saving...' : '本地保存'}
+							</motion.button>
+						)}
 						<motion.button
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}
