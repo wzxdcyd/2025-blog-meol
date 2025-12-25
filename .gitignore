@@ -49,5 +49,3 @@ next-env.d.ts
 
 # local dev
 .idea/
-**/actions/save-local.ts
-**/actions/save-site-content-local.ts
