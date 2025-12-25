@@ -17,11 +17,8 @@ export const Comments = ({ className, path, serverURL: propServerURL }: Comments
 	useEffect(() => {
 		if (!containerRef.current) return
 
-		// Priority: Prop > Environment Variable > Hardcoded fallback (if any)
-		const envURL = process.env.NEXT_PUBLIC_WALINE_SERVER_URL
-		const finalServerURL = propServerURL || envURL
-
-		console.log('[Comments] Init Waline with:', { propServerURL, envURL, finalServerURL })
+		// Priority: Prop > Hardcoded > Environment Variable
+		const finalServerURL = propServerURL || 'https://waline.wzxdcyd.icu' || process.env.NEXT_PUBLIC_WALINE_SERVER_URL
 
 		if (!finalServerURL) {
 			console.warn('Waline serverURL is not configured. Comments will not be loaded.')
