@@ -8,7 +8,7 @@ import { motion } from 'motion/react'
 dayjs.extend(weekOfYear)
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { ANIMATION_DELAY, INIT_DELAY } from '@/consts'
+import { INIT_DELAY } from '@/consts'
 import ShortLineSVG from '@/svgs/short-line.svg'
 import { useBlogIndex, type BlogIndexItem } from '@/hooks/use-blog-index'
 import { useCategories } from '@/hooks/use-categories'
@@ -352,7 +352,7 @@ export default function BlogPage() {
 					</motion.div>
 				)}
 
-				{groupKeys.map((groupKey, index) => {
+				{groupKeys.map(groupKey => {
 					const group = groupedItems[groupKey]
 					if (!group) return null
 
