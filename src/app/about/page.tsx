@@ -5,6 +5,7 @@ import { motion } from 'motion/react'
 import { toast } from 'sonner'
 import { useMarkdownRender } from '@/hooks/use-markdown-render'
 import { pushAbout, type AboutData } from './services/push-about'
+import { saveLocalAbout } from './actions/save-local'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 import LikeButton from '@/components/like-button'
@@ -66,6 +67,23 @@ export default function Page() {
 		}
 	}
 
+	const handleSaveLocal = async () => {
+		setIsSaving(true)
+		try {
+			await saveLocalAbout(data)
+
+			setOriginalData(data)
+			setIsEditMode(false)
+			setIsPreviewMode(false)
+			toast.success('保存到本地成功！')
+		} catch (error: any) {
+			console.error(error)
+			toast.error('保存本地失败: ' + error.message)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
 	const handleCancel = () => {
 		setData(originalData)
 		setIsEditMode(false)
@@ -73,6 +91,7 @@ export default function Page() {
 	}
 
 	const buttonText = isAuth ? '保存' : '导入密钥'
+	const isDev = process.env.NODE_ENV === 'development'
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -195,6 +214,16 @@ export default function Page() {
 							className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>
 							取消
 						</motion.button>
+						{isDev && (
+							<motion.button
+								whileHover={{ scale: 1.05 }}
+								whileTap={{ scale: 0.95 }}
+								onClick={handleSaveLocal}
+								disabled={isSaving}
+								className='rounded-xl border border-blue-200 bg-blue-50 px-6 py-2 text-sm text-blue-700'>
+								保存本地
+							</motion.button>
+						)}
 						<motion.button
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}

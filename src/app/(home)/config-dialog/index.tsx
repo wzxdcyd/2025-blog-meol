@@ -12,6 +12,7 @@ import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImage
 import { ColorConfig } from './color-config'
 import { HomeLayout } from './home-layout'
 import { fileToBase64NoPrefix } from '@/lib/file-utils'
+import { saveSiteContentLocal } from '../actions/save-site-content-local'
 
 interface ConfigDialogProps {
 	open: boolean
@@ -220,7 +221,96 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
+	const handleSaveLocal = async () => {
+		setIsSaving(true)
+		try {
+			const files: { filePath: string; contentBase64: string }[] = []
+
+			// Favicon
+			if (faviconItem?.type === 'file') {
+				files.push({
+					filePath: 'public/favicon.png',
+					contentBase64: await fileToBase64NoPrefix(faviconItem.file)
+				})
+			}
+
+			// Avatar
+			if (avatarItem?.type === 'file') {
+				files.push({
+					filePath: 'public/images/avatar.png',
+					contentBase64: await fileToBase64NoPrefix(avatarItem.file)
+				})
+			}
+
+			// Art Images
+			for (const [id, item] of Object.entries(artImageUploads)) {
+				if (item.type === 'file') {
+					const artConfig = formData.artImages?.find(art => art.id === id)
+					if (artConfig) {
+						const normalizedUrlPath = artConfig.url.startsWith('/') ? artConfig.url : `/${artConfig.url}`
+						files.push({
+							filePath: `public${normalizedUrlPath}`,
+							contentBase64: await fileToBase64NoPrefix(item.file)
+						})
+					}
+				}
+			}
+
+			// Background Images
+			for (const [id, item] of Object.entries(backgroundImageUploads)) {
+				if (item.type === 'file') {
+					const bgConfig = formData.backgroundImages?.find(bg => bg.id === id)
+					if (bgConfig && bgConfig.url.startsWith('/images/background/')) {
+						const normalizedUrlPath = bgConfig.url.startsWith('/') ? bgConfig.url : `/${bgConfig.url}`
+						files.push({
+							filePath: `public${normalizedUrlPath}`,
+							contentBase64: await fileToBase64NoPrefix(item.file)
+						})
+					}
+				}
+			}
+
+			// Social Button Images
+			for (const [id, item] of Object.entries(socialButtonImageUploads)) {
+				if (item.type === 'file') {
+					const button = formData.socialButtons?.find(btn => btn.id === id)
+					if (button && button.value.startsWith('/images/social-buttons/')) {
+						const normalizedUrlPath = button.value.startsWith('/') ? button.value : `/${button.value}`
+						files.push({
+							filePath: `public${normalizedUrlPath}`,
+							contentBase64: await fileToBase64NoPrefix(item.file)
+						})
+					}
+				}
+			}
+
+			await saveSiteContentLocal({
+				siteContent: formData,
+				cardStyles: cardStylesData,
+				files
+			})
+
+			setSiteContent(formData)
+			setCardStyles(cardStylesData)
+			updateThemeVariables(formData.theme)
+			setFaviconItem(null)
+			setAvatarItem(null)
+			setArtImageUploads({})
+			setBackgroundImageUploads({})
+			setSocialButtonImageUploads({})
+			onClose()
+			toast.success('已保存到本地配置')
+		} catch (error: any) {
+			console.error(error)
+			toast.error('本地保存失败: ' + error.message)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
 	const buttonText = isAuth ? '保存' : '导入密钥'
+	// Next.js replaces this at build time
+	const isDev = process.env.NODE_ENV === 'development'
 
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
@@ -258,6 +348,16 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 						))}
 					</div>
 					<div className='flex gap-3'>
+						{isDev && (
+							<motion.button
+								whileHover={{ scale: 1.05 }}
+								whileTap={{ scale: 0.95 }}
+								onClick={handleSaveLocal}
+								disabled={isSaving}
+								className='bg-card rounded-xl border border-blue-200 bg-blue-50 px-6 py-2 text-sm text-blue-700'>
+								保存本地
+							</motion.button>
+						)}
 						<motion.button
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}

@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { ProjectCard, type Project } from './components/project-card'
 import CreateDialog from './components/create-dialog'
 import { pushProjects } from './services/push-projects'
+import { saveLocalProjects } from './actions/save-local'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 import initialList from './list.json'
@@ -98,6 +99,53 @@ export default function Page() {
 		}
 	}
 
+	const handleSaveLocal = async () => {
+		setIsSaving(true)
+		try {
+			const localImages: { urlKey: string; name: string; contentBase64: string }[] = []
+
+			for (const [url, imageItem] of imageItems.entries()) {
+				if (imageItem.type === 'file') {
+					const hash = imageItem.hash || (await hashFileSHA256(imageItem.file))
+					const ext = getFileExt(imageItem.file.name)
+					const filename = `${hash}${ext}`
+					const contentBase64 = await fileToBase64NoPrefix(imageItem.file)
+
+					localImages.push({
+						urlKey: url,
+						name: filename,
+						contentBase64
+					})
+				}
+			}
+
+			await saveLocalProjects({
+				projects,
+				localImages
+			})
+
+			// Update state to reflect local paths
+			const updatedProjects = projects.map(p => {
+				const img = localImages.find(li => li.urlKey === p.url)
+				if (img) {
+					return { ...p, image: `/images/project/${img.name}` }
+				}
+				return p
+			})
+
+			setProjects(updatedProjects)
+			setOriginalProjects(updatedProjects)
+			setImageItems(new Map())
+			setIsEditMode(false)
+			toast.success('保存到本地成功！')
+		} catch (error: any) {
+			console.error(error)
+			toast.error('保存本地失败: ' + error.message)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
 	const handleCancel = () => {
 		setProjects(originalProjects)
 		setImageItems(new Map())
@@ -105,6 +153,7 @@ export default function Page() {
 	}
 
 	const buttonText = isAuth ? '保存' : '导入密钥'
+	const isDev = process.env.NODE_ENV === 'development'
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -136,7 +185,7 @@ export default function Page() {
 
 			<div className='flex flex-col items-center justify-center px-6 pt-32 pb-12'>
 				<div className='grid w-full max-w-[1200px] grid-cols-2 gap-6 max-md:grid-cols-1'>
-					{projects.map((project, index) => (
+					{projects.map(project => (
 						<ProjectCard key={project.url} project={project} isEditMode={isEditMode} onUpdate={handleUpdate} onDelete={() => handleDelete(project)} />
 					))}
 				</div>
@@ -153,6 +202,16 @@ export default function Page() {
 							className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>
 							取消
 						</motion.button>
+						{isDev && (
+							<motion.button
+								whileHover={{ scale: 1.05 }}
+								whileTap={{ scale: 0.95 }}
+								onClick={handleSaveLocal}
+								disabled={isSaving}
+								className='rounded-xl border border-blue-200 bg-blue-50 px-6 py-2 text-sm text-blue-700'>
+								保存本地
+							</motion.button>
+						)}
 						<motion.button
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}

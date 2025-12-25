@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useWriteStore } from '../stores/write-store'
 import { usePreviewStore } from '../stores/preview-store'
 import { usePublish } from '../hooks/use-publish'
+import { useSaveLocal } from '../hooks/use-save-local'
 
 export function WriteActions() {
 	const { loading, mode, form, originalSlug, updateForm } = useWriteStore()
 	const { openPreview } = usePreviewStore()
 	const { isAuth, onChoosePrivateKey, onPublish, onDelete } = usePublish()
+	const { handleSaveLocal, isDev } = useSaveLocal()
 	const keyInputRef = useRef<HTMLInputElement>(null)
 	const mdInputRef = useRef<HTMLInputElement>(null)
 	const router = useRouter()
@@ -106,6 +108,19 @@ export function WriteActions() {
 							取消
 						</motion.button>
 					</>
+				)}
+
+				{isDev && (
+					<motion.button
+						initial={{ opacity: 0, scale: 0.6 }}
+						animate={{ opacity: 1, scale: 1 }}
+						whileHover={{ scale: 1.05 }}
+						whileTap={{ scale: 0.95 }}
+						className='bg-card rounded-xl border px-4 py-2 text-sm text-green-600'
+						disabled={loading}
+						onClick={handleSaveLocal}>
+						本地保存
+					</motion.button>
 				)}
 
 				<motion.button
