@@ -58,6 +58,13 @@
 			"value": "https://xhslink.com/m/6hvkaJDCbQd",
 			"label": "",
 			"order": 2
+		},
+		{
+			"id": "button-1767238517047",
+			"type": "github",
+			"value": "",
+			"label": "联系方式：->",
+			"order": 3
 		}
 	],
 	"clockShowSeconds": true,
